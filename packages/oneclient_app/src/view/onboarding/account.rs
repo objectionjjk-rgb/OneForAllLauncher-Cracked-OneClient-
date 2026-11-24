@@ -25,7 +25,6 @@ impl Component for OnboardingAccount {
         let custom = use_custom_login();
 
         let account = try_default_account(&account_query);
-        let has_account = account.is_some();
 
         let content = rect()
             .vertical()
@@ -36,10 +35,15 @@ impl Component for OnboardingAccount {
                 t("oneclient.onboarding.account.subtitle"),
             ))
             .maybe_child(account.as_ref().map(|account| account_preview(account).into_element()))
-            .child(sign_in_card(msa.pending, msa.error.clone(), { let msa = msa.clone(); move |_| msa.start() }))
-            .child(Button::new().secondary().large().width(Size::fill())
+            // Offline is the primary path: no Microsoft account or purchase is required.
+            .child(Button::new().primary().large().width(Size::fill())
                 .on_press({ let offline = offline.clone(); move |_| offline.open() })
                 .child(Icon::new(IconType::Offline).size(22.)).text(t("fork.account.offline.add_long")))
+            .child(label()
+                .text(t("fork.account.offline.no_microsoft"))
+                .font_size(12.)
+                .color(colors::fg_secondary()))
+            .child(sign_in_card(msa.pending, msa.error.clone(), { let msa = msa.clone(); move |_| msa.start() }))
             .child(Button::new().secondary().large().width(Size::fill()).enabled(!elyby.pending)
                 .on_press({ let elyby = elyby.clone(); move |_| elyby.start() })
                 .child(Icon::new(IconType::Elyby).size(22.)).text(t("fork.account.elyby.add_long")))
@@ -52,10 +56,11 @@ impl Component for OnboardingAccount {
         let page = onboarding_page(
             onboarding_illustration(IconType::OnboardingAccount),
             content,
+            // Never force a Microsoft account before continuing.
             onboarding_nav(
                 Some(Route::OnboardingLanguage {}),
                 Route::OnboardingBundlePicker {},
-                has_account,
+                true,
             ),
         );
 
@@ -119,7 +124,7 @@ fn sign_in_card(
         .cross_align(Alignment::Start)
         .child(
             Button::new()
-                .primary()
+                .secondary()
                 .large()
                 .width(Size::fill())
                 .enabled(!pending)
