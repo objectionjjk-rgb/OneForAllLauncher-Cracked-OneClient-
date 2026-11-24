@@ -52,7 +52,7 @@ pub fn spawn_automatic_update_check(events: EventBus) {
     }
 }
 
-/// Automatic calls require opt-in. Manual calls always ask before installing.
+/// Both automatic and manual checks ask before installing.
 pub fn spawn_update_check(auto_install: bool, events: EventBus) {
     if auto_install && !automatic_updates_enabled() {
         return;
@@ -129,7 +129,7 @@ async fn run_check(auto_install: bool, events: EventBus) -> anyhow::Result<()> {
         tracing::info!("no update available");
         if !auto_install {
             events
-                .notify("You’re up to date")
+                .notify("Youâ€™re up to date")
                 .body(format!(
                     "OneForAllLauncher {} is the latest available version.",
                     env!("CARGO_PKG_VERSION")
@@ -152,7 +152,7 @@ async fn run_check(auto_install: bool, events: EventBus) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    if !auto_install && events.ask(update_prompt(&update.version)).await?.is_none() {
+    // Always ask before installing, including checks started automatically on launch.\n    if events.ask(update_prompt(&update.version)).await?.is_none() {
         tracing::info!("user declined update {}", update.version);
         return Ok(());
     }
