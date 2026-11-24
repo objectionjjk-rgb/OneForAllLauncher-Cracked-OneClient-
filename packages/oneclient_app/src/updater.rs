@@ -310,7 +310,7 @@ mod tests {
     fn release_endpoint_belongs_to_this_fork() {
         assert_eq!(
             UPDATER_ENDPOINT,
-            "https://github.com/liwwyy/OneForAllLauncher/releases/latest/download/latest.json"
+            "https://github.com/objectionjjk-rgb/OneForAllLauncher-Cracked-OneClient-/releases/latest/download/latest.json"
         );
         assert!(!UPDATER_PUBKEY.trim().is_empty());
     }

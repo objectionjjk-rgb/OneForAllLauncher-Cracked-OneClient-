@@ -14,9 +14,10 @@ TARGETS = {
 }
 
 
-def manifest(directory, version, repository, tag, notes):
+def manifest(directory, version, repository, tag, notes, targets=None):
+    selected = TARGETS if targets is None else {key: TARGETS[key] for key in targets}
     platforms = {}
-    for target, (suffix, package_format) in TARGETS.items():
+    for target, (suffix, package_format) in selected.items():
         filename = f"OneForAllLauncher_{version}_{suffix}"
         artifact = directory / filename
         if not artifact.is_file() or artifact.stat().st_size == 0:
@@ -47,6 +48,8 @@ if __name__ == "__main__":
     parser.add_argument("repository")
     parser.add_argument("tag")
     parser.add_argument("--notes", type=Path, required=True)
+    parser.add_argument("--target", action="append", choices=sorted(TARGETS), default=None)
     args = parser.parse_args()
-    result = manifest(args.directory, args.version, args.repository, args.tag, args.notes.read_text())
+    result = manifest(args.directory, args.version, args.repository, args.tag,
+                      args.notes.read_text(), args.target)
     (args.directory / "latest.json").write_text(json.dumps(result, indent=2) + "\n")
