@@ -129,7 +129,7 @@ async fn run_check(auto_install: bool, events: EventBus) -> anyhow::Result<()> {
         tracing::info!("no update available");
         if !auto_install {
             events
-                .notify("Youâ€™re up to date")
+                .notify("YouÃ¢â‚¬â„¢re up to date")
                 .body(format!(
                     "OneForAllLauncher {} is the latest available version.",
                     env!("CARGO_PKG_VERSION")
@@ -152,7 +152,8 @@ async fn run_check(auto_install: bool, events: EventBus) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    // Always ask before installing, including checks started automatically on launch.\n    if events.ask(update_prompt(&update.version)).await?.is_none() {
+    // Always ask before installing, including checks started automatically on launch.
+    if events.ask(update_prompt(&update.version)).await?.is_none() {
         tracing::info!("user declined update {}", update.version);
         return Ok(());
     }
