@@ -22,8 +22,6 @@ Retain these account features:
   override, both random-name generators and optional online-name lookup.
 - Microsoft, Ely.by and custom Yggdrasil authentication, refresh and profile skins.
 - Authlib-injector support for Ely.by/custom game launches.
-- The scoped Minecraft 1.8.9 VanillaHUD preview compatibility agent until its
-  replacement is verified against the distributed mod and tested in game.
 
 Use upstream instance import/export and sharing. Do not restore the removed
 fork-specific Prism/ZIP exporters, templates, presets or file-selection UI.
@@ -89,21 +87,20 @@ buttons should reuse upstream icons rather than introduce unrelated icon styles
 or hardcoded white tints. When integrating upstream 2.10.0, retain its pixel-icon,
 theme, text-sizing and translation support in fork-modified views.
 
-The compatibility-agent toggle must control only the VanillaHUD preview
-workaround. Turning it off must omit both the preview `-javaagent` argument and
-its added classpath entry, while retaining authlib-injector for authentication.
-Use the existing persisted settings pattern and explicitly review the default
-for old settings files. Verify the exact distributed VanillaHUD version before
-claiming the workaround is redundant; a source fix alone is insufficient.
+The VanillaHUD preview workaround was retired after verifying the fix in the
+stable 1.8.9 Ornithe bundle and confirming the Ely.by preview in game. Preserve
+authlib-injector for Ely.by and custom launches.
+
+Use the upstream Launch flow for all account types. Preserve the applied
+`offline_launch_settings` migration for upgrades from older fork releases.
 
 The local skin client hook must run only for `AccountKind::Offline`,
-with a selected local skin. Use loader-independent authlib and legacy skin paths;
+with a selected local skin or cape. Use loader-independent authlib and legacy skin paths;
 retain verified direct hooks only where necessary. Test against real authlib API
 generations and keep in-game validation separate from headless tests. Gate hook/classpath/agent
 injection in the launcher before starting Minecraft. Never load this hook for
-Microsoft, Ely.by or custom accounts, even if internet is unavailable or offline
-launch mode is selected. This restriction is separate from authlib-injector and
-the VanillaHUD preview workaround, which retain their own provider-specific scope.
+Microsoft, Ely.by or custom accounts, even if internet is unavailable.
+Authlib-injector retains its separate provider scope.
 Resolve authlib/legacy hook calls through the source-built bootstrap bridge;
 do not load helper classes through a mod loader from inside a transformer.
 Keep regression coverage for a loader that denies the bridge package as well as
@@ -115,12 +112,31 @@ certificate validation and unrelated loopback endpoints; never disable TLS
 validation globally to support a local skin.
 
 PolyPlus/OneConfig head previews also perform direct session-profile lookups.
-Preserve the version 5 hook's route for the selected offline UUID to its private
+Preserve the hook's route for the selected offline UUID to its private
 unsigned profile response, alongside the PNG capability. Do not broaden this
 route to other UUIDs or authentication services. Keep the checksum-pinned shipped
 OneConfig head-reader regression; authlib-only tests do not cover this path.
 The owner confirmed offline and Ely.by skins and head previews work in game on
 2026-11-12; this does not establish every game/loader combination.
+
+Use the upstream Wardrobe page, cards, preview, import panel and outfit controls
+for offline accounts. Disable its Cosmetics tab and authenticated wardrobe/store
+queries while exposing custom and Minecraft capes in the same page. Keep the
+local-only notice below the Wardrobe title. Reuse the skin import panel for
+custom cape files and URLs. Maintain the Minecraft catalog as public Mojang CDN
+texture references with verified checksums.
+
+The local wardrobe stores its versioned manifest and UUID-named PNGs in each
+account's existing private local-skins folder. Read legacy skin.json/skin.png
+without writing on view; retain those files when persisting the new library.
+Keep skin and cape selections independent, including cape-only launches, and
+save arm models in outfits. Deleted textures must not leave dangling outfit
+references. Reject unsupported manifest versions without overwriting them.
+Never derive file paths from display names or imported URLs. Bound PNG file and
+network reads and verify dimensions before decoding. Version 6 agent/bridge
+assets must coexist with version 5 for running games. Preserve exact private
+skin, cape and profile HTTP exceptions and the shipped OneConfig head regression.
+Keep work on the separate PolyPlus cosmetics agent deferred until after Wardrobe acceptance.
 
 Accept PolyPlus showing an Ely.by launch account as Microsoft as a documented
 display quirk. The owner explicitly chose not to maintain a PolyPlus fork or add
@@ -150,8 +166,8 @@ python3 -B -m unittest discover -s distribution -p 'test_*.py'
 Distinguish pre-existing failures from regressions. Add focused tests for changed
 behavior and upgrade compatibility; documentation-only changes need link and
 diff checks rather than application builds. Agent tests and prerequisites are
-documented in `distribution/elyby-preview-compat/README.md`. They do not replace
-testing the actual game/mod combination with the workaround enabled and disabled.
+documented in `distribution/offline-skin/README.md`. Keep headless hook checks
+and in-game rendering results separate.
 
 GitHub uses managed CodeQL default setup; see `docs/security-verification.md`.
 Do not add a duplicate CodeQL workflow without intentionally migrating that
@@ -162,6 +178,12 @@ a successful analysis job does not mean there are no alerts.
 owner explicitly requests them. The owner manually tests UI changes.** Report
 which checks ran and which behaviors still need manual verification. Do not claim
 historical entries in VALIDATION.md as results from the current checkout.
+
+After verification and during upstream integrations, check the checkout size
+with `du -sh target`. Prune superseded Cargo executables and abandoned build
+outputs once builds have stopped. Keep the current test build and reusable
+dependencies where practical. Limit cleanup to generated workspace files.
+Preserve launcher data, accounts, instances, worlds and shared game libraries.
 
 ## Commits, upstream updates and releases
 
@@ -181,11 +203,20 @@ is separately requested. Replacing a branch does not erase commits retained by
 tags. Do not reset, force-push, delete refs or publish outside the authorized
 scope.
 
-Keep fork version numbers aligned with the upstream release being integrated.
+Normally align fork version numbers with the upstream release being integrated.
+For an owner-authorized fork-only fix, use an unused patch version and record the
+upstream base in the release notes. Keep fork versions increasing so installed
+launchers can receive the next update even if upstream uses the same version.
 Sync the fork to stable OneLauncher/OneClient releases, rather than following
 individual upstream commits or development builds. The usual update target is
 within a day of an upstream stable release; do not promise an unconditional
 deadline or bypass validation to meet it.
+When integrating a stable upstream release, compare its package formats and
+architectures with the fork release workflow. Carry forward new formats with
+fork-specific app IDs, desktop entries and URLs. Build the x86_64 Flatpak from
+the fork DEB, include its checksum in the release, and keep Flatpak out of the
+in-launcher updater manifest. Publish one installer per platform, architecture
+and package format. Omit upstream's duplicate Windows and AppImage aliases.
 The release workflow runs on pushes to `main` and supports manual dispatch. It
 skips already tagged/released versions on automatic pushes and publishes after
 successful packaging/signing. Keep existing releases immutable. The stable-sync

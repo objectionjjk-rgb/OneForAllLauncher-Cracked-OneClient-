@@ -1,3 +1,86 @@
+# Local launch, Java and Flatpak checks (2026-11-28)
+
+Starting HEAD was `614aa8ac`, on OneForAllLauncher 2.13.0. All launch entry
+points use the upstream launch flow. The account code and applied database
+migration are unchanged.
+
+- The locked Rust 1.98.0 Linux debug build passed at `target/debug/oneforall_app`.
+  The executable was linked without debug info. The CLI build did not open the
+  launcher or load existing accounts or instances.
+- The Java and network crate suites passed all 71 tests, including the Microsoft
+  checksum redirect regression and the download hash-mismatch test.
+- All 8 database migration tests passed, including reopening a shared upstream
+  library with the legacy setting present. The upstream test query missing
+  SQLx metadata compiled against a temporary SQLite schema.
+- The Microsoft Windows x64 Java 21.0.13.1 `-1` archive matched Microsoft's
+  published SHA-256, `206e1fff36e6651cf3317901f185b66e755b4a4cbac916260b3595444deb5452`.
+- All 10 distribution tests passed. Flatpak Builder parsed the fork manifest and
+  AppStream validated the fork metadata. The GNOME 51 SDK is required for the
+  full bundle build in CI.
+
+Manual coverage is pending for disconnected launch with Microsoft and standalone
+offline accounts, and for fresh Microsoft Java installation on Windows x64.
+
+---
+
+# Local OneClient 2.13.0 checks (2026-11-27)
+
+The local merge `7ea35242` includes the upstream stable commit
+`a149c66981c235c5e2b823fc03083d97a5215f12`. The pre-merge Wardrobe and
+VanillaHUD changes were restored. The lockfile changes only workspace versions.
+The Wardrobe translations contain the muted Local label, the owner's exact
+notice and the Ely.by unavailable message. Git whitespace and conflict checks
+passed. The locked Rust 1.98.0 debug build succeeded at
+`target/debug/oneforall_app`. The final binary was linked without debug info
+to reduce linker I/O and contains the updated Wardrobe copy.
+
+Manual testing stays with the owner. Verify the offline heading, skin and cape
+notice, Ely.by unavailable state, and the existing Microsoft Wardrobe.
+
+---
+
+# Upstream Wardrobe integration for offline accounts (2026-11-26)
+
+Starting HEAD: `48c99933`. The owner requested local implementation only.
+The Wardrobe uses the existing upstream page and signed-account controls.
+Offline accounts use the Skins, Capes and Outfits tabs with Cosmetics disabled.
+The Capes tab uses the same import panel for custom cape files and URLs.
+
+- The locked launcher build passed with Rust 1.98.0. The local executable is
+  `target/debug/oneforall_app`.
+- All 15 focused wardrobe Rust tests and both launcher settings tests passed.
+  Coverage includes custom cape persistence, outfit cleanup on deletion, old
+  skin selection carryover, account-kind isolation and settings containing the
+  retired preview flag.
+- All 50 catalog entries returned valid 64 × 32 PNGs from Mojang's texture CDN.
+  SHA-256 matched the embedded references, and every PNG decoded successfully.
+- The 1.8.9 and 26.3 headless matrix passed with the real authlib/Fabric loaders,
+  cape-only and skin+cape profiles, the Secure Skins rewrite, and the shipped
+  OneConfig PlayerHead reader used by PolyPlus. The separate Ornithe smoke
+  test passed.
+- All 10 distribution unit tests passed. The offline Wardrobe translation keys
+  and local documentation links resolve. Cargo dependencies and the lockfile
+  are unchanged.
+
+Polyfrost's checksum-verified stable 1.8.9 Ornithe bundle now includes
+VanillaHUD 3.5.18. The distributed class includes the missing-name fallback,
+and the owner confirmed the Ely.by preview works with the workaround disabled.
+The preview agent was removed. The owner still needs to check the custom-auth
+OneConfig tab-list preview with authlib-injector enabled.
+
+The owner still needs to test the integrated UI and in-game appearance.
+Check the legacy skin carryover, skin imports and previews, custom cape
+file/URL imports, cached cape selection and cape-only launch, outfit switching, and cape rendering in
+Ornithe 1.8.9 and modern OneClient. Recheck skins and head previews, and
+check the Microsoft Wardrobe with an authenticated account. Cape visibility
+settings apply. No screenshots or automated visual comparisons were taken.
+
+The earlier local appearance-hook matrix covered 18 pinned fixtures from beta
+1.7.3 through 26.3 and the legacy cloak URL paths. Those results concern the
+shared hook. Picker integration still needs the owner's game test.
+
+---
+
 # Current local integration: 2.12.1 (2026-11-24)
 
 The owner requested local integration for manual testing and the Nix updater
@@ -552,15 +635,13 @@ the owner's report, not automated rendering verification or full platform covera
    sharing; verify accounts and launcher settings remain separate. On fresh
    setup, press Enter on Updates without clicking a choice; also check manual
    selection and Back/Next behavior.
-2. Disconnect before startup and launch a fully installed game. Check the
-   eight-second shared probe, all launch labels, right-click Launch Offline,
-   the per-instance toggle (default off), busy-state guards and recovery online.
-   Explicit offline mode should launch without a connectivity wait. Missing
-   metadata, files or Java must produce an installation error, not downloads.
-3. Check expired Microsoft/Ely.by/custom accounts in offline mode: preserve saved
-   credentials, selected account, player name and game UUID. Offline mode does
-   not enable authenticated multiplayer. Test equal names on different providers
-   and reject a second equal name on the same provider.
+2. Disconnect before startup and use **Launch** on a fully installed instance
+   with a Microsoft account. Repeat with a standalone offline account, then
+   reconnect and check that the normal online launch still works.
+3. On Windows x64, launch a fresh instance configured to download Microsoft
+   Java 21. Verify the launcher accepts the repackaged archive's SHA-256 and
+   starts the game. Check that equal names work across account types and that a
+   second equal name on the same account type is rejected.
 4. Minecraft 1.8.9/Ornithe and modern-version local skins have been confirmed in
    game by the owner. Continue checking untested Vanilla/Fabric/Forge/NeoForge/Quilt
    setups and representative old and new versions as available: choose a PNG,
@@ -569,10 +650,10 @@ the owner's report, not automated rendering verification or full platform covera
    when launched offline. Versions before 1.8 use the classic model. Check
    installed skin mods separately.
 
-5. Test current VanillaHUD 3.5.10 with Ely.by and custom accounts, with the preview
-   workaround disabled and enabled. Exercise the OneConfig tab-list/head editor
-   and unavailable profile services. Authlib-injector must remain enabled. The
-   upstream null-name fix exists; file an issue/PR only if a failure is reproduced.
+5. The owner verified the Ely.by preview with the workaround disabled.
+   Retest the OneConfig tab-list editor with a custom-auth
+   account after removing the workaround. The authenticated launch still uses
+   authlib-injector.
 6. Build all release platforms through CI and test signed upgrades from the old
    fork, custom data paths, preserved accounts/settings/instances, OS shortcuts,
    URL handlers, tray launch and simultaneous upstream/fork operation. Check

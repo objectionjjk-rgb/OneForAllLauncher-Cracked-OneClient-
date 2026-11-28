@@ -554,7 +554,7 @@ pub async fn fetch_verified(
     if normalize_hash(&actual) != normalize_hash(expected_sha1) {
         return Err(RequestError::HashMismatch {
             source_desc: url.to_string(),
-            expected: expected_sha1.to_string(),
+            expected: format!("SHA-1 {expected_sha1}"),
             actual,
         });
     }
@@ -577,6 +577,8 @@ mod tests {
     use tokio::io::{AsyncBufReadExt, BufReader};
 
     use super::*;
+
+    type RangeLabel = (&'static str, fn(usize, usize, usize) -> String);
 
     async fn serve(
         body: Arc<Vec<u8>>,
@@ -1039,7 +1041,7 @@ mod tests {
                 .map(|i| (i % 251) as u8)
                 .collect(),
         );
-        let labels: [(&str, fn(usize, usize, usize) -> String); 2] = [
+        let labels: [RangeLabel; 2] = [
             ("start", |a, b, length| {
                 format!("bytes {}-{b}/{length}", a + 1)
             }),

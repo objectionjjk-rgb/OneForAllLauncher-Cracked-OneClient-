@@ -675,12 +675,13 @@ fn line_picker(
         return None;
     }
 
-    let options: Vec<String> = siblings.iter().map(picker_caption).collect();
     let current = siblings
         .iter()
-        .position(|c| c.id == cluster.id)
-        .unwrap_or(0);
-    let ids: Vec<i64> = siblings.iter().map(|c| c.id).collect();
+        .find(|c| c.id == cluster.id)
+        .unwrap_or(&siblings[0]);
+    let others: Vec<&Cluster> = siblings.iter().filter(|c| c.id != current.id).collect();
+    let options: Vec<String> = others.iter().map(|c| picker_caption(c)).collect();
+    let ids: Vec<i64> = others.iter().map(|c| c.id).collect();
 
     Some(
         rect()
@@ -698,7 +699,7 @@ fn line_picker(
                     .color(colors::fg_secondary()),
             )
             .child(
-                Dropdown::new(options[current].clone(), options)
+                Dropdown::new(picker_caption(current), options)
                     .outlined()
                     .width(Size::fill())
                     .height(Size::px(40.))
@@ -982,15 +983,20 @@ fn art_height_for(sidebar_height: f32) -> Option<f32> {
 
 fn play_button(
     cluster_id: i64,
-    _dispatch: crate::Actions,
+    dispatch: crate::Actions,
     state: (&'static str, bool),
 ) -> impl IntoElement {
     let (label, enabled) = state;
-    crate::components::InstanceLaunchButton {
-        cluster_id, label, enabled, grow: true,
-        button: Button::new().primary(),
-    }
-
+    Button::new()
+        .primary()
+        .width(Size::flex(1.))
+        .enabled(enabled)
+        .on_press(move |_| {
+            if enabled {
+                dispatch.launch_cluster(cluster_id);
+            }
+        })
+        .text(label)
 }
 
 fn page_header(mut show_create: State<bool>) -> impl IntoElement {
