@@ -38,7 +38,34 @@ jobs:
             echo "Already up to date with liwwyy/OneForAllLauncher."
             exit 0
           fi
-          git merge --no-edit FETCH_HEAD
+          if git merge --no-edit FETCH_HEAD; then
+            echo "Merged cleanly."
+          else
+            echo "Merge conflicts; applying fork resolution rules."
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            printf '%s\n' "$conflicts"
+            # This fork ships its own Windows-only signed release workflow; keep ours.
+            if printf '%s\n' "$conflicts" | grep -Fxq '.github/workflows/oneclient_release.yml'; then
+              git checkout --ours -- .github/workflows/oneclient_release.yml
+              git add .github/workflows/oneclient_release.yml
+            fi
+            # Lang files: three-way merge that keeps fork keys and takes upstream updates.
+            while IFS= read -r f; do
+              case "$f" in
+                packages/oneclient_app/lang/*.json)
+                  node .github/scripts/merge-lang.js "$f"
+                  git add "$f"
+                  ;;
+              esac
+            done <<< "$conflicts"
+            remaining="$(git diff --name-only --diff-filter=U)"
+            if [ -n "$remaining" ]; then
+              echo "::error::Unresolved merge conflicts:"
+              printf '%s\n' "$remaining"
+              exit 1
+            fi
+            git commit --no-edit
+          fi
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
